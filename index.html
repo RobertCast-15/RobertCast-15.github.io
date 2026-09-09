@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¿QUIÈN ESTA EN MEDIO? - Memorama Sistémico</title>
+    <style>
+        :root {
+            --bg-main: #0a0a0c;
+            --text-light: #f4f4f5;
+            --text-dark: #09090b;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --danger: #f43f5e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-align: center;
+            background: linear-gradient(45deg, #00f2fe, #4facfe, #f355da);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            filter: drop-shadow(0px 4px 6px rgba(0,242,254,0.3));
+        }
+
+        #setup-screen, #game-container, #end-screen {
+            width: 100%;
+            max-width: 1650px;
+            background: #121214;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+            border: 1px solid #27272a;
+        }
+
+        #game-container, #end-screen {
+            display: none;
+        }
+
+        .config-sections {
+            display: grid;
+            grid-template-columns: 2.2fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .pairs-grid, .players-grid {
+            display: grid;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #09090b;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+        }
+
+        .pair-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #141416;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #27272a;
+        }
+
+        .pair-row div { display: flex; gap: 10px; align-items: center; }
+        .pair-row span { font-weight: bold; color: #00f2fe; min-width: 25px; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #3f3f46;
+            border-radius: 8px;
+            background: #09090b;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: #000;
+            padding: 16px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: block;
+            width: 100%;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .game-header {
+            background: #09090b;
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #27272a;
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .game-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 20px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            align-content: start;
+        }
+
+        .card {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            min-height: 180px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 8px;
+        }
+
+        .card-back {
+            border: 2px solid rgba(255,255,255,0.12);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+        }
+
+        .card-number {
+            font-size: 2.8rem;
+            font-weight: 900;
+        }
+
+        .card-front {
+            color: var(--text-dark);
+            transform: rotateY(180deg);
+            font-weight: 700;
+            line-height: 1.25;
+            text-align: left;
+            border: 1px solid rgba(0,0,0,0.15);
+            justify-content: flex-start;
+            align-items: flex-start;
+            overflow: hidden;
+        }
+
+        .card-front-type {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #374151;
+            margin-bottom: 6px;
+            font-weight: 900;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Texto base más grande */
+        .card-text {
+            font-size: calc(0.55vw + 0.55rem);
+            line-height: 1.2;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            width: 100%;
+        }
+
+        /* Ajuste automático para textos largos */
+        .card-text.long-text {
+            font-size: calc(0.45vw + 0.45rem);
+            line-height: 1.15;
+        }
+
+        .card-text.very-long-text {
+            font-size: calc(0.38vw + 0.38rem);
+            line-height: 1.1;
+        }
+
+        .card-text.extra-long-text {
+            font-size: calc(0.32vw + 0.32rem);
+            line-height: 1.08;
+        }
+
+        .sidebar {
+            background: #09090b;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #27272a;
+            height: fit-content;
+        }
+
+        .sidebar h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            text-align: center;
+            border-bottom: 1px solid #27272a;
+            padding-bottom: 6px;
+        }
+
+        .scoreboard {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 550px;
+            overflow-y: auto;
+        }
+
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: #141416;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .player-row.active {
+            background: var(--accent);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .player-score {
+            background: rgba(0,0,0,0.4);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .end-content { text-align: center; padding: 30px 15px; }
+        .phrase-destacada {
+            font-size: 2.2rem;
+            color: #00f2fe;
+            margin: 25px 0;
+            font-style: italic;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .podium {
+            margin: 20px auto;
+            max-width: 500px;
+            background: #09090b;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #27272a;
+            text-align: left;
+        }
+
+        .podium-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #27272a;
+        }
+        .podium-item:last-child { border: none; }
+        .gold { color: #fbbf24; font-weight: bold; }
+        .silver { color: #cbd5e1; font-weight: bold; }
+        .bronze { color: #b45309; font-weight: bold; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <h1 id="game-title-display">¿QUIÈN ESTA EN MEDIO?</h1>
+
+    <div id="setup-screen">
+        <div class="config-sections">
+            <div>
+                <h3 style="margin-bottom: 12px; color: #cbd5e1;">Contenido Sistémico Cargado (20 Pares):</h3>
+                <div class="pairs-grid" id="pairs-inputs"></div>
+            </div>
+            <div>
+                <h3 style="margin-bottom: 12px; color: #cbd5e1;">12 Participantes Fijas:</h3>
+                <div class="players-grid" id="players-inputs"></div>
+            </div>
+        </div>
+        <button class="btn" onclick="startGame()">¡Iniciar Dinámica!</button>
+    </div>
+
+    <div id="game-container">
+        <div class="game-header">
+            <div>Turno de: <span style="color:#00f2fe;" id="active-player-name">Bethania</span></div>
+        </div>
+
+        <div class="game-layout">
+            <div class="board" id="board"></div>
+            <div class="sidebar">
+                <h2>Marcador</h2>
+                <div class="scoreboard" id="scoreboard"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-screen">
+        <div class="end-content">
+            <h2 style="font-size: 3.5rem; color: #4ade80;">Análisis Concluido</h2>
+            <p class="phrase-destacada">"¡Han descubierto el sistema!"<br>Cada vínculo cuenta una historia. Cada tercero ocupa un lugar.</p>
+            
+            <h3>Jerarquía de Resultados</h3>
+            <div class="podium" id="podium-list"></div>
+            <button class="btn" style="max-width: 300px; margin: 30px auto 0;" onclick="location.reload()">Reiniciar</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let victoryInterval = null;
+        
+        function playSound(type) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+
+                if (type === 'flip') {
+                    osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.08);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+                } else if (type === 'match') {
+                    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); 
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.25);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'fail') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(80, audioCtx.currentTime + 0.07);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.18);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.18);
+                } else if (type === 'victory') {
+                    victoryInterval = setInterval(() => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.type = 'triangle'; o.frequency.value = 120 + Math.random() * 220;
+                        g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                        g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.06);
+                        o.start(); o.stop(audioCtx.currentTime + 0.06);
+                    }, 50);
+                }
+            } catch(e) {}
+        }
+
+        const REVERSO_BACKGROUNDS = ['#1a2421', '#16222f', '#2a2415', '#241a2f', '#1c1c24', '#2d1e2f', '#1f2d26', '#2d2d1e', '#1f242d', '#281a1a'];
+        const TEXT_NUMBER_COLORS = ['#4ade80', '#eab308', '#60a5fa', '#38bdf8', '#f43f5e', '#a855f7', '#fb923c', '#22d3ee', '#f472b6', '#a3e635'];
+
+        const CONCEPTO_COLORS = ['#dbeafe', '#e0f2fe', '#e0e7ff', '#f3e8ff', '#fae8ff', '#fce7f3', '#fee2e2', '#cffafe', '#d1fae5', '#fef9c3'];
+        const DEFINICION_COLORS = ['#ffedd5', '#fef9c3', '#ecfccb', '#dcfce7', '#ccfbf1', '#fef3c7', '#ffe4e6', '#e0f2fe', '#fae8ff', '#f3e8ff'];
+
+        const defaultPairs = [
+            { c: "Dinámicas Ocultas", d: "Yo lo llevo. Yo en tu lugar. Yo te sigo. Dar y tomar." },
+            { c: "Triada", d: "Es un sistema social que comprende tres elementos ligados entre sí por una relación doble." },
+            { c: "Alianza", d: "Dos o más personas se unen para alcanzar un objetivo en común." },
+            { c: "Coalición", d: "Es la unión de dos o más personas contra un tercero." },
+            { c: "Tercero ausente", d: "Han sido siempre individuos que han desempeñado un papel experimentado como crucial en la familia, en un plano positivo o negativo. Surge la necesidad de llenar los vacíos." },
+            { c: "Tercero Pesante", d: "Es la persona colocada por la o las otras en un lugar que permita al conjunto del sistema familiar no tener que enfrentarse con la muerte de la persona allegada. no tener que vivir un duelo imposible" },
+            { c: "El tercero objeto de deberes", d: "Es la persona que queda situada en el sistema familiar como objeto de responsabilidades, obligaciones o cuidados que otros miembros sienten que deben asumir." },
+            { c: "El rehén sacrificado", d: "Miembro que queda atrapado en una dinámica relacional y termina pagando un costo personal por mantener el equilibrio familiar. La lealtad de los hijos se puede notar." },
+            { c: "El fantasma", d: "Sigue siendo el tercero que preserva para siempre el vínculo de pareja que se ha organizado como un mausoleo que abriga el culto del recuerdo del desaparecido, acompañado de un sufrimiento, y malestares vinculados con el duelo no realizado." },
+            { c: "El hijo imaginario", d: "Figura construida alrededor de expectativas, cuya concepción es esperada desde hace largo tiempo, puede desempeñar un papel indispensable en la regulación de la relación entre sus futuros padres." },
+            { c: "El nido se vacía de sus terceros pesantes", d: "Cuando los hijos son adultos quieren hacer su vida en otra parte y cuando en la generación precedente, los padres de los cónyuges mueren." },
+            { c: "El tercero miembro de la familia de origen", d: "Este pariente puede haber sido adorado por todos: a veces desempeñó consciente o inconsciente el papel de derivante o de juez, para cada descicion a tomar, o, por el contrario, puede haber sido despreciado por la pareja, uniendola igualmemte como precencia desagradable." },
+            { c: "El o la amante como tercero", d: "Creación de una zona del silencio y de territorios autónomos tanto para las fantasías como para las realidades cuando se va ya no está ese secreto que comparten silenciosamente, hay una forma de vacío." },
+            { c: "El hijo remplazo", d: "Puede ser concebido expresamente para sustituir a un hijo muerto, y ser de alguna manera, la prueba viviente de una injusticia profunda cometida por la muerte y la huella de la incompetencia de los padres en la procreación del mejor de sus hijos." },
+            { c: "El fantasma del hijo esperado", d: "El fantasma del hijo que nunca nació, reflejo del duelo de la procreación imposible." },
+            { c: "Los ausentes encubiertos", d: "Ni se les reconoce ostensiblemente ni se los oculta profundamente, no están enterrados, sino sólo recubiertos en forma provisoria para no molestar: para no ser vistos." },
+            { c: "El tercero ligero", d: "Función que cada uno de nosotros puede cumplir en forma transitoria, pero de la que puede desembarazarse o ser liberado rápida y fácilmente." },
+            { c: "El o la terapeuta como tercero pesante", d: "Podría ser llamado para ocupar el lugar que ha dejado libre un miembro que cumplía una función particular en la familia: el de tercero pesante." },
+            { c: "Duelo y tercero pesante", d: "Su ausencia desestabiliza profundamente el equilibrio familiar, el duelo en estas condiciones es casi imposible, puesto que se da la tentativa de borrar la ausencia." },
+            { c: "Duelo congelado", d: "El proceso de duelo que se instaura hará más pesado y bloqueará otros procesos necesarios para la evolucion de los miembros de la famila y del sistema entero. El muerto no está muerto, pero el vivo no está vivo." }
+        ];
+
+        const defaultPlayers = ["Bethania", "Martha", "Adri", "Norma", "Angel", "Mariana", "Elsa", "Joss", "Díana", "Eva", "Carla", "Estela"];
+
+        let players = [];
+        let currentPlayerIdx = 0;
+        let cardsData = [];
+        let flippedCards = [];
+        let lockBoard = false;
+
+        function escapeHtml(str) {
+            return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function getTextSizeClass(texto) {
+            const len = texto.length;
+            if (len <= 30) return '';
+            if (len <= 60) return 'long-text';
+            if (len <= 100) return 'very-long-text';
+            return 'extra-long-text';
+        }
+
+        const pairsContainer = document.getElementById('pairs-inputs');
+        defaultPairs.forEach((pair, index) => {
+            const div = document.createElement('div');
+            div.className = 'pair-row';
+            div.innerHTML = `
+                <div><span>${index+1}</span><input type="text" id="c-${index}" value="${escapeHtml(pair.c)}" style="font-weight:bold;"></div>
+                <div style="padding-left:35px;"><input type="text" id="d-${index}" value="${escapeHtml(pair.d)}"></div>
+            `;
+            pairsContainer.appendChild(div);
+        });
+
+        const playersContainer = document.getElementById('players-inputs');
+        defaultPlayers.forEach((pName, i) => {
+            const div = document.createElement('div');
+            div.style.marginBottom = "6px";
+            div.innerHTML = `<input type="text" id="p-name-${i}" value="${escapeHtml(pName)}">`;
+            playersContainer.appendChild(div);
+        });
+
+        function startGame() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            players = [];
+            for(let i=0; i<12; i++) {
+                const nameVal = document.getElementById(`p-name-${i}`).value.trim();
+                players.push({ id: i, name: nameVal || `Jugador ${i+1}`, score: 0 });
+            }
+
+            let pairs = [];
+            for(let i=0; i<20; i++) {
+                const cVal = document.getElementById(`c-${i}`).value.trim();
+                const dVal = document.getElementById(`d-${i}`).value.trim();
+                if(cVal && dVal) pairs.push({ id: i, concepto: cVal, definicion: dVal });
+            }
+
+            if (pairs.length < 20) {
+                alert(`Solo se cargaron ${pairs.length} pares de 20. Verifica que todos los campos estén completos.`);
+                return;
+            }
+
+            cardsData = [];
+            pairs.forEach((p, idx) => {
+                let cColor = CONCEPTO_COLORS[idx % CONCEPTO_COLORS.length];
+                let dColor = DEFINICION_COLORS[(idx + 4) % DEFINICION_COLORS.length];
+
+                let backBg1 = REVERSO_BACKGROUNDS[idx % REVERSO_BACKGROUNDS.length];
+                let numColor1 = TEXT_NUMBER_COLORS[(idx + 2) % TEXT_NUMBER_COLORS.length];
+                let backBg2 = REVERSO_BACKGROUNDS[(idx + 3) % REVERSO_BACKGROUNDS.length];
+                let numColor2 = TEXT_NUMBER_COLORS[(idx + 6) % TEXT_NUMBER_COLORS.length];
+
+                cardsData.push({
+                    pairId: p.id, type: 'concepto', text: p.concepto, frontColor: cColor,
+                    backColor: backBg1, numberColor: numColor1, matched: false
+                });
+                cardsData.push({
+                    pairId: p.id, type: 'definicion', text: p.definicion, frontColor: dColor,
+                    backColor: backBg2, numberColor: numColor2, matched: false
+                });
+            });
+
+            shuffle(cardsData);
+
+            cardsData.forEach((card, idx) => {
+                card.cardNumber = idx + 1;
+            });
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+
+            updateActivePlayerDisplay();
+            renderScoreboard();
+            renderBoard();
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function updateActivePlayerDisplay() {
+            document.getElementById('active-player-name').innerText = players[currentPlayerIdx].name;
+        }
+
+        function renderScoreboard() {
+            const container = document.getElementById('scoreboard');
+            container.innerHTML = '';
+            players.forEach((p, idx) => {
+                const div = document.createElement('div');
+                div.className = `player-row ${idx === currentPlayerIdx ? 'active' : ''}`;
+                div.innerHTML = `<span>${p.name}</span><span class="player-score">${p.score} pts</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            cardsData.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card';
+                cardEl.dataset.index = index;
+                if (card.matched) cardEl.style.visibility = 'hidden';
+
+                const sizeClass = getTextSizeClass(card.text);
+
+                cardEl.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-back" style="background-color: ${card.backColor}">
+                            <span class="card-number" style="color: ${card.numberColor}">${card.cardNumber}</span>
+                        </div>
+                        <div class="card-front" style="background-color: ${card.frontColor}">
+                            <div class="card-front-type">${card.type}</div>
+                            <div class="card-text ${sizeClass}">${card.text}</div>
+                        </div>
+                    </div>
+                `;
+                cardEl.addEventListener('click', flipCard);
+                board.appendChild(cardEl);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            const idx = this.dataset.index;
+            if (flippedCards.includes(idx) || cardsData[idx].matched) return;
+
+            playSound('flip');
+            this.classList.add('flipped');
+            flippedCards.push(idx);
+
+            if (flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            lockBoard = true;
+            const [idx1, idx2] = flippedCards;
+            const card1 = cardsData[idx1];
+            const card2 = cardsData[idx2];
+
+            if (card1.pairId === card2.pairId && card1.type !== card2.type) {
+                setTimeout(() => {
+                    playSound('match');
+                    card1.matched = true; card2.matched = true;
+                    players[currentPlayerIdx].score += 1;
+                    flippedCards = []; lockBoard = false;
+                    renderScoreboard(); renderBoard();
+                    checkGameEnd();
+                }, 800);
+            } else {
+                setTimeout(() => {
+                    playSound('fail'); 
+                    document.querySelector(`[data-index='${idx1}']`).classList.remove('flipped');
+                    document.querySelector(`[data-index='${idx2}']`).classList.remove('flipped');
+                    setTimeout(() => {
+                        rebarajarCartasActivas();
+                        currentPlayerIdx = (currentPlayerIdx + 1) % 12;
+                        flippedCards = []; lockBoard = false;
+                        updateActivePlayerDisplay(); renderScoreboard(); renderBoard();
+                    }, 500);
+                }, 1500);
+            }
+        }
+
+        function rebarajarCartasActivas() {
+            let activeCards = cardsData.filter(c => !c.matched);
+            shuffle(activeCards);
+            activeCards.forEach((card, idx) => {
+                card.cardNumber = idx + 1;
+            });
+            let activeIdx = 0;
+            for(let i=0; i<cardsData.length; i++) {
+                if(!cardsData[i].matched) {
+                    cardsData[i] = activeCards[activeIdx];
+                    activeIdx++;
+                }
+            }
+        }
+
+        function checkGameEnd() {
+            const allMatched = cardsData.every(c => c.matched);
+            if (allMatched) {
+                setTimeout(() => {
+                    playSound('victory');
+                    document.getElementById('game-container').style.display = 'none';
+                    document.getElementById('end-screen').style.display = 'block';
+                    
+                    const sortedPlayers = [...players].sort((a,b) => b.score - a.score);
+                    const podiumList = document.getElementById('podium-list');
+                    podiumList.innerHTML = '';
+                    
+                    sortedPlayers.forEach((p, index) => {
+                        let medalClass = '';
+                        if(index === 0) medalClass = 'gold';
+                        else if(index === 1) medalClass = 'silver';
+                        else if(index === 2) medalClass = 'bronze';
+                        const item = document.createElement('div');
+                        item.className = 'podium-item';
+                        item.innerHTML = `<span class="${medalClass}">${index + 1}°. ${p.name}</span><span>${p.score} pts</span>`;
+                        podiumList.appendChild(item);
+                    });
+                }, 600);
+            }
+        }
+    </script>
+</body>
+</html>
